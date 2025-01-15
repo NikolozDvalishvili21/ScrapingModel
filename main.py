@@ -12,6 +12,7 @@ table = soup.find('table', {'style': 'width:100%;'})
 
 total_2024 = 0
 total_2023 = 0
+total_2022 = 0
 
 if not table:
     print("Table not found.")
@@ -40,16 +41,21 @@ for row in table.find_all('tr'):
                 elif '2023' in date_str:
                     total_2023 += sales
                     print(f"Added {sales} to total_2023. New total: {total_2023}")  
+                elif '2022' in date_str:
+                    total_2022 += sales
+                    print(f"Added {sales} to total_2022. New total: {total_2022}")  
             except ValueError:
                 print(f"Skipping invalid sales value: {sales_text}")  
 
 print(f"Total sales in 2024: {total_2024}")
 print(f"Total sales in 2023: {total_2023}")
+print(f"Total sales in 2022: {total_2022}")
 
 data = [
     ['Year', 'Total Sales'],
     ['2024', total_2024],
-    ['2023', total_2023]
+    ['2023', total_2023],
+    ['2022', total_2022]
 ]
 
 csv_filename = 'elden_ring_sales.csv'
