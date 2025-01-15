@@ -1,59 +1,60 @@
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
+import csv
 
-def scrape_mbappe_goals(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.5615.121 Safari/537.36'
-    }
+url = 'https://www.vgchartz.com/game/230180/elden-ring/sales'
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print(f"Failed to retrieve page: {response.status_code}")
-        return None
+response = requests.get(url)
 
-    soup = BeautifulSoup(response.content, 'html.parser')
+soup = BeautifulSoup(response.content, 'html.parser')
 
-    stats_pullout = soup.find('div', class_='stats_pullout')
-    if not stats_pullout:
-        print("Could not find the stats_pullout div.")
-        return None
+table = soup.find('table', {'style': 'width:100%;'})  
 
-    goal_data_div = stats_pullout.find('div', class_='p1')
-    if goal_data_div:
-        goal_elements = goal_data_div.find_all('div')
-        
-        la_liga_goals = None
-        champions_league_goals = None
-        
-        for div in goal_elements:
-            if "Gls" in div.text:
-                goals = div.find_all('p')
-                if len(goals) >= 2: 
-                    la_liga_goals = goals[0].text.strip()
-                    champions_league_goals = goals[1].text.strip()
-                    
-                    print("La Liga Goals:", la_liga_goals)
-                    print("Champions League Goals:", champions_league_goals)
+total_2024 = 0
+total_2023 = 0
 
-                    data = {
-                        "La Liga Goals": [la_liga_goals],
-                        "Champions League Goals": [champions_league_goals]
-                    }
-                    df = pd.DataFrame(data)
-
-                    df.to_csv('mbappe_goals_2024_2025.csv', index=False)
-                    print("Goal data saved to 'mbappe_goals_2024_2025.csv'")
-
-                    return df
-    else:
-        print("Goal data section not found.")
-        return None
-
-url = "https://fbref.com/en/players/42fd9c7f/Kylian-Mbappe"
-
-goals_data = scrape_mbappe_goals(url)
-if goals_data is not None:
-    print("Goal data successfully scraped.")
+if not table:
+    print("Table not found.")
 else:
-    print("Failed to extract goal data.")
+    print("Table found, proceeding with parsing.")
+
+for row in table.find_all('tr'):
+    columns = row.find_all('td')
+    
+    if len(columns) >= 3:  
+        sales_str = columns[0].find('a')
+        if sales_str:
+            sales_text = sales_str.get_text(strip=True)
+            print(f"Extracted sales text: '{sales_text}'")  
+
+            date_str = columns[2].get_text(strip=True)
+            print(f"Date extracted: '{date_str}'")  
+
+            try:
+                sales = int(sales_text.replace(',', ''))
+                print(f"Converted sales: {sales}")  
+
+                if '2024' in date_str:
+                    total_2024 += sales
+                    print(f"Added {sales} to total_2024. New total: {total_2024}")  
+                elif '2023' in date_str:
+                    total_2023 += sales
+                    print(f"Added {sales} to total_2023. New total: {total_2023}")  
+            except ValueError:
+                print(f"Skipping invalid sales value: {sales_text}")  
+
+print(f"Total sales in 2024: {total_2024}")
+print(f"Total sales in 2023: {total_2023}")
+
+data = [
+    ['Year', 'Total Sales'],
+    ['2024', total_2024],
+    ['2023', total_2023]
+]
+
+csv_filename = 'elden_ring_sales.csv'
+with open(csv_filename, mode='w', newline='', encoding='utf-8') as file:
+    writer = csv.writer(file)
+    writer.writerows(data)
+
+print(f"Data has been saved to {csv_filename}")
